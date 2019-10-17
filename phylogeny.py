@@ -12,6 +12,10 @@ def main():
 
     args = parser.parse_args()
 
+    # Get the path to the directory of this script
+    script_dir = os.path.dirname(__file__)
+    script_dir = script_dir + "/"
+
     # Get the path to the fasta file
     input_file_path = os.path.abspath(args.input_file)
 
@@ -41,9 +45,23 @@ def main():
             genetic_distance_list.append(genetic_distance)
         genetic_distance_dict[identifiers[i]] = genetic_distance_list
 
-    print(genetic_distance_dict)
+    # Create a tab-delimited file of genetic distance in the directory where this script lives
+    genetic_distance_file = open(script_dir + "genetic_distances.txt", "w")
+
+    # Make the header for the file, start with a blank "cell"
+    genetic_distance_file.write("\t")
+    genetic_distance_file.write("\t".join(identifiers))
+    genetic_distance_file.write("\n")
+    # Iterate through all the items in genetic_distance_dict and write it to the result file
+    for key, val in genetic_distance_dict.items():
+        genetic_distance_file.write(key + "\t")
+        # Convert the list of float into string so it can be written to a file
+        val = [str(i) for i in val]
+        genetic_distance_file.write("\t".join(val))
+        genetic_distance_file.write("\n")
 
     fasta_file.close()
+    genetic_distance_file.close()
 
 
 def calculate_genetic_distance(first_sequence, second_sequence):

@@ -36,6 +36,14 @@ def main():
             sequences.append(line)
 
     # Calculate the genetic distance between every pair of sequences and store in a dictionary
+    """
+    The key for the genetic_distance_dict will represent the tip or root number and will start with 1, 
+    where 1 is a tip and represents the first sequence in the fasta file.
+    Until the dictionary gets updated, it will start out with the 61 sequences in the fasta file.
+    The internal root node will start with 62 since there are 61 sequences in the fasta file.
+    There are 59 (61 - 2) nodes possible in this phylogenetic tree, so the first pair to be joined will be
+    root 120 (61 + 59).
+    """
     genetic_distance_dict = {}
 
     for i in range(0, len(identifiers)):
@@ -43,7 +51,7 @@ def main():
         for j in range(0, len(sequences)):
             genetic_distance = calculate_genetic_distance(sequences[i], sequences[j])
             genetic_distance_list.append(genetic_distance)
-        genetic_distance_dict[identifiers[i]] = genetic_distance_list
+        genetic_distance_dict[str(i + 1)] = genetic_distance_list
 
     # Create a tab-delimited file of genetic distance in the directory where this script lives
     genetic_distance_file = open(script_dir + "genetic_distances.txt", "w")
@@ -54,31 +62,42 @@ def main():
     genetic_distance_file.write("\n")
     # Iterate through all the items in genetic_distance_dict and write it to the result file
     for key, val in genetic_distance_dict.items():
-        genetic_distance_file.write(key + "\t")
+        sequence = identifiers[int(key) - 1]
+        genetic_distance_file.write(sequence + "\t")
         # Convert the list of float into string so it can be written to a file
         val = [str(i) for i in val]
         genetic_distance_file.write("\t".join(val))
         genetic_distance_file.write("\n")
 
     # Calculate the Q matrix and store the Q distances in a dictionary
+    """
+    The key for the Q_matric_dict will represent the tip or root number and will start with 1, 
+    where 1 is a tip and represents the first sequence in the fasta file.
+    The internal root node will start with 62 since there are 61 sequences in the fasta file.
+    There are 59 (61 - 2) nodes possible in this phylogenetic tree, so the first pair to be joined will be
+    root 120 (61 + 59).
+    """
     Q_matrix_dict = {}
-    for i in range(0, len(identifiers)):
-        Q_matrix_dict[identifiers[i]] = []
+    for i in range(0, len(list(genetic_distance_dict.keys()))):
+        # Get the name for the key from genetic_distance_dict
+        node_i = list(genetic_distance_dict.keys())[i]
+        Q_matrix_dict[node_i] = []
         # Calculate the sum of distances to the ith sequence
-        sum_distance_i_k = sum(genetic_distance_dict[identifiers[i]])
-        for j in range(0, len(identifiers)):
+        sum_distance_i_k = sum(genetic_distance_dict[node_i])
+        for j in range(0, len(list(genetic_distance_dict.keys()))):
+            node_j = list(genetic_distance_dict.keys())[j]
             # No need to calculate Q for the same sequences
             # Have the Q_distance be 0 as a placeholder
             if i == j:
-                Q_matrix_dict[identifiers[i]].append(0)
+                Q_matrix_dict[node_i].append(0)
             else:
                 # Calculate the sum of distances to the jth sequence
-                sum_distance_j_k = sum(genetic_distance_dict[identifiers[j]])
+                sum_distance_j_k = sum(genetic_distance_dict[node_j])
                 # Calculate the Q distance
-                Q_distance = ((len(identifiers) - 2) * genetic_distance_dict[identifiers[i]][j] -
+                Q_distance = ((len(identifiers) - 2) * genetic_distance_dict[node_i][j] -
                               sum_distance_i_k - sum_distance_j_k)
                 # Append the Q distance as a list, which will be the values for the ith sequence key
-                Q_matrix_dict[identifiers[i]].append(Q_distance)
+                Q_matrix_dict[node_i].append(Q_distance)
 
     # Find the minimum distance in the Q matrix
     # Initialize the overall minimum Q distance as 0
@@ -94,8 +113,8 @@ def main():
             min_q_distance_key = key
             # Find and store the index of the min Q distance in the list of values for the key
             min_q_distance_index = Q_matrix_dict[key].index(min_q_distance)
-            # See against which sequence the min Q value was calculated relative to the key
-            min_q_distance_partner = identifiers[min_q_distance_index]
+            # See against which tip or root the min Q value was calculated relative to the key
+            min_q_distance_partner = list(Q_matrix_dict.keys())[min_q_distance_index]
     print(min_q_distance)
     print(min_q_distance_key)
     print(min_q_distance_partner)

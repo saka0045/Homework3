@@ -70,6 +70,9 @@ def main():
             genetic_distance_file.write(str(nested_value) + "\t")
         genetic_distance_file.write("\n")
 
+    root = 120
+    edges_dict = {}
+
     # Calculate the Q matrix and store the Q distances in a dictionary
 
     Q_matrix_dict = {}
@@ -113,6 +116,43 @@ def main():
     print(min_q_distance)
     print(min_q_distance_key)
     print(min_q_distance_partner)
+
+    # Calculate the distance to the new node from the first branch
+    first_branch_distance = (0.5 * genetic_distance_dict[min_q_distance_key][min_q_distance_partner] +
+                             (1 / (2 * (len(list(genetic_distance_dict.keys())) - 2))) *
+                             (sum(genetic_distance_dict[min_q_distance_key].values()) -
+                              sum(genetic_distance_dict[min_q_distance_partner].values())))
+
+    # Calculate the second branch distance
+    second_branch_distance = genetic_distance_dict[min_q_distance_key][min_q_distance_partner] - first_branch_distance
+
+    # Store the joined node information, start at number 120 and decrease every cycle
+    edges_dict[str(root)] = {min_q_distance_key:first_branch_distance,
+                             min_q_distance_partner:second_branch_distance}
+
+    # Update genetic_distance_dict
+    # Add the new root to the dictionary
+    genetic_distance_dict[str(root)] = {}
+    # Calculate the distance to the new node
+    for key in genetic_distance_dict.keys():
+        # No need to update the tip/root that is being joined
+        if key == min_q_distance_key or key == min_q_distance_partner:
+            continue
+        # No need to do this for the newly formed root also because we will be copying the distances as we go
+        if key == str(root):
+            continue
+        else:
+            genetic_distance_dict[key][str(root)] = (0.5 * (genetic_distance_dict[min_q_distance_key][key] +
+                                                       genetic_distance_dict[min_q_distance_partner][key] -
+                                                       genetic_distance_dict[min_q_distance_key][min_q_distance_partner]))
+            # Copy the same distance to the nested dictionary of the newly formed root
+            genetic_distance_dict[str(root)][key] = genetic_distance_dict[key][str(root)]
+            # Delete the joined tip/root from the nested dictionary
+            del genetic_distance_dict[key][min_q_distance_key]
+            del genetic_distance_dict[key][min_q_distance_partner]
+    # Delete the joined tip/root from the genetic distance dictionary
+    del genetic_distance_dict[min_q_distance_key]
+    del genetic_distance_dict[min_q_distance_partner]
 
     fasta_file.close()
     genetic_distance_file.close()

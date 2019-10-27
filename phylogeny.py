@@ -80,35 +80,47 @@ def main():
     ancestral_nodes_only_written_once = []
     # Start at the internal node root, ntips + 1, which is 62
     ancestral_node_to_write = '62'
-    # Loop until all of the nodes are written, there will be (numOfEdges - 2) roots
-    while len(descendant_nodes_written) < (len(identifiers) - 2):
+    # Calculate the number of nodes to write, which is all of the nested keys in the edges_dict
+    number_of_nodes_to_write = 0
+    for key in edges_dict.keys():
+        number_of_nodes_to_write += len(edges_dict[key])
+    # Loop until all of the nodes are written
+    while number_of_nodes_to_write > 0:
         edges_file.write(ancestral_node_to_write + "\t")
+        # Append the ancestral node to the written ancestral node list
         ancestral_nodes_only_written_once.append(ancestral_node_to_write)
+        # Obtain the descendant node information
         descendant_nodes_dict = edges_dict[ancestral_node_to_write]
         descendant_nodes_list = list(descendant_nodes_dict.keys())
+        # See if the descendant tip/node was already written to the file as a descendant tip/node
         for index in range(0, len(descendant_nodes_list)):
             if descendant_nodes_list[index] in descendant_nodes_written:
                 continue
             elif descendant_nodes_list[index] in tips_written:
                 continue
+            # If not, write to the file
             else:
                 descendant_node_to_write = descendant_nodes_list[index]
                 edges_file.write(descendant_node_to_write + "\t")
+                # Write the distance from the ancestral node to the descendant tip/node
                 edge_length = descendant_nodes_dict[descendant_node_to_write]
                 edges_file.write(str(edge_length) + "\n")
+                # Decrease the number of nodes to write by 1
+                number_of_nodes_to_write -= 1
                 # If the descendant node number is greater than 61, it is a node
                 if int(descendant_node_to_write) > 61:
                     descendant_nodes_written.append(descendant_node_to_write)
-                    # If the ancestral node was written twice, remove from the ancestral node list
+                    # If the ancestral node was written as many times as it has descendant tip/node,
+                    # remove from the ancestral node list
                     if ancestral_nodes_only_written_once.count(ancestral_node_to_write) == \
                             len(edges_dict[ancestral_node_to_write]):
+                        # Delete as many times as it needs to
+                        # Most ancestral nodes have 2 descendant tips/nodes but for odd number of tips,
+                        # An ancestral node can have 3 descendant tips/nodes
                         for loop_count in enumerate(edges_dict[ancestral_node_to_write].keys()):
                             ancestral_nodes_only_written_once.remove(ancestral_node_to_write)
                         # Make the next root the next ancestral node to write
-                        try:
-                            ancestral_node_to_write = descendant_node_to_write
-                        except IndexError:
-                            break
+                        ancestral_node_to_write = descendant_node_to_write
                     # If not written twice, make the descendant the next ancestral node to write
                     else:
                         ancestral_node_to_write = descendant_node_to_write
@@ -116,13 +128,17 @@ def main():
                 # If the descendant node number is less than or equal to 61, it is a tip
                 else:
                     tips_written.append(descendant_node_to_write)
-                    # If the ancestral node was written twice, remove from the ancestral node list
+                    # If the ancestral node was written as many times as it has descendant tip/node,
+                    # remove from the ancestral node list
                     if ancestral_nodes_only_written_once.count(ancestral_node_to_write) == \
                             len(edges_dict[ancestral_node_to_write]):
                         for loop_count in enumerate(edges_dict[ancestral_node_to_write].keys()):
                             ancestral_nodes_only_written_once.remove(ancestral_node_to_write)
                         # Make the next ancestral node to write the last item in the list and continue the loop
-                        ancestral_node_to_write = ancestral_nodes_only_written_once[-1]
+                        try:
+                            ancestral_node_to_write = ancestral_nodes_only_written_once[-1]
+                        except IndexError:
+                            break
                     break
 
 

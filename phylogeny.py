@@ -64,10 +64,73 @@ def main():
         # Subtract 1 from the root number and repeat
         root -= 1
 
+    # For odd number of tips, there will be 2 nodes left over
+    # Add the distance between those nodes and add it to the edges_dict
+    if len(genetic_distance_dict) == 2:
+        edges_dict[str(root + 1)][str(root + 2)] = genetic_distance_dict[str(root + 1)][str(root + 2)]
+
+    # Make the edges.txt file
+    edges_file = open(script_dir + "edges.txt", "w")
+
+    # Keep track of which descendant nodes and tips that was already written to the edges.txt
+    descendant_nodes_written = []
+    tips_written = []
+    # Also keep track of how many times the ancesteral node was written
+    # Each ancestral node should have two descendants so it needs to be written twice
+    ancestral_nodes_only_written_once = []
+    # Start at the internal node root, ntips + 1, which is 62
+    ancestral_node_to_write = '62'
+    # Loop until all of the nodes are written, there will be (numOfEdges - 2) roots
+    while len(descendant_nodes_written) < (len(identifiers) - 2):
+        edges_file.write(ancestral_node_to_write + "\t")
+        ancestral_nodes_only_written_once.append(ancestral_node_to_write)
+        descendant_nodes_dict = edges_dict[ancestral_node_to_write]
+        descendant_nodes_list = list(descendant_nodes_dict.keys())
+        for index in range(0, len(descendant_nodes_list)):
+            if descendant_nodes_list[index] in descendant_nodes_written:
+                continue
+            elif descendant_nodes_list[index] in tips_written:
+                continue
+            else:
+                descendant_node_to_write = descendant_nodes_list[index]
+                edges_file.write(descendant_node_to_write + "\t")
+                edge_length = descendant_nodes_dict[descendant_node_to_write]
+                edges_file.write(str(edge_length) + "\n")
+                # If the descendant node number is greater than 61, it is a node
+                if int(descendant_node_to_write) > 61:
+                    descendant_nodes_written.append(descendant_node_to_write)
+                    # If the ancestral node was written twice, remove from the ancestral node list
+                    if ancestral_nodes_only_written_once.count(ancestral_node_to_write) == \
+                            len(edges_dict[ancestral_node_to_write]):
+                        for loop_count in enumerate(edges_dict[ancestral_node_to_write].keys()):
+                            ancestral_nodes_only_written_once.remove(ancestral_node_to_write)
+                        # Make the next root the next ancestral node to write
+                        try:
+                            ancestral_node_to_write = descendant_node_to_write
+                        except IndexError:
+                            break
+                    # If not written twice, make the descendant the next ancestral node to write
+                    else:
+                        ancestral_node_to_write = descendant_node_to_write
+                    break
+                # If the descendant node number is less than or equal to 61, it is a tip
+                else:
+                    tips_written.append(descendant_node_to_write)
+                    # If the ancestral node was written twice, remove from the ancestral node list
+                    if ancestral_nodes_only_written_once.count(ancestral_node_to_write) == \
+                            len(edges_dict[ancestral_node_to_write]):
+                        for loop_count in enumerate(edges_dict[ancestral_node_to_write].keys()):
+                            ancestral_nodes_only_written_once.remove(ancestral_node_to_write)
+                        # Make the next ancestral node to write the last item in the list and continue the loop
+                        ancestral_node_to_write = ancestral_nodes_only_written_once[-1]
+                    break
+
+
     print(edges_dict)
 
     fasta_file.close()
     genetic_distance_file.close()
+    edges_file.close()
 
 
 def update_genetic_distance(genetic_distance_dict, min_q_distance_key, min_q_distance_partner, root):

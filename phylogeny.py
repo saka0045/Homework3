@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Python script for Fall 2019 CSCI5481 Homework 3
+
+Discussed homework with Jeannette Rustin
+"""
+
+__author__ = "Yuta Sakai"
+
 import argparse
 import os
 import sys
@@ -39,8 +49,8 @@ def main():
     genetic_distance_dict, genetic_distance_file = create_genetic_distance_dict_and_file(identifiers, script_dir,
                                                                                          sequences)
 
-    # Initialize by starting at root 120 being the first node to be joined
-    root = 120
+    # Initialize by starting at the last root possible (nTips + [nTips - 2]) being the first node to be joined
+    root = len(identifiers) + (len(identifiers) - 2)
     edges_dict = {}
 
     # Loop until all of the neighbors are joined
@@ -68,19 +78,20 @@ def main():
     # Make the edges.txt file
     edges_file = open(script_dir + "edges.txt", "w")
 
-    make_edges_file(edges_dict, edges_file)
+    make_edges_file(edges_dict, edges_file, identifiers)
 
     fasta_file.close()
     genetic_distance_file.close()
     edges_file.close()
 
 
-def make_edges_file(edges_dict, edges_file):
+def make_edges_file(edges_dict, edges_file, identifiers):
     """
     Make the edges.txt file
-    See the code for detailed comments
+    See code for comments
     :param edges_dict:
     :param edges_file:
+    :param identifiers:
     :return:
     """
     # Keep track of which descendant nodes and tips that was already written to the edges.txt
@@ -89,8 +100,8 @@ def make_edges_file(edges_dict, edges_file):
     # Also keep track of how many times the ancesteral node was written
     # Each ancestral node should have two descendants so it needs to be written twice
     ancestral_nodes_only_written_once = []
-    # Start at the internal node root, ntips + 1, which is 62
-    ancestral_node_to_write = '62'
+    # Start at the internal node root, ntips + 1, which is 62 for this homework
+    ancestral_node_to_write = str((len(identifiers) + 1))
     # Calculate the number of nodes to write, which is all of the nested keys in the edges_dict
     number_of_nodes_to_write = 0
     for key in edges_dict.keys():

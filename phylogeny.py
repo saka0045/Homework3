@@ -51,10 +51,6 @@ def main():
         # Find the minimum distance in the Q matrix
         min_q_distance, min_q_distance_key, min_q_distance_partner = find_neighbors(q_matrix_dict)
 
-        print(min_q_distance)
-        print(min_q_distance_key)
-        print(min_q_distance_partner)
-
         # Join the neighbors and calculate the distance to the newly formed root
         edges_dict = join_neighbors(edges_dict, genetic_distance_dict, min_q_distance_key, min_q_distance_partner, root)
 
@@ -72,6 +68,21 @@ def main():
     # Make the edges.txt file
     edges_file = open(script_dir + "edges.txt", "w")
 
+    make_edges_file(edges_dict, edges_file)
+
+    fasta_file.close()
+    genetic_distance_file.close()
+    edges_file.close()
+
+
+def make_edges_file(edges_dict, edges_file):
+    """
+    Make the edges.txt file
+    See the code for detailed comments
+    :param edges_dict:
+    :param edges_file:
+    :return:
+    """
     # Keep track of which descendant nodes and tips that was already written to the edges.txt
     descendant_nodes_written = []
     tips_written = []
@@ -140,13 +151,6 @@ def main():
                         except IndexError:
                             break
                     break
-
-
-    print(edges_dict)
-
-    fasta_file.close()
-    genetic_distance_file.close()
-    edges_file.close()
 
 
 def update_genetic_distance(genetic_distance_dict, min_q_distance_key, min_q_distance_partner, root):

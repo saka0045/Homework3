@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
 
     # Get the path to the directory of this script
-    script_dir = os.path.dirname(__file__)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = script_dir + "/"
 
     # Get the path to the fasta file
@@ -93,6 +93,10 @@ def main():
     fasta_file.close()
     genetic_distance_file.close()
     newick_tree_file.close()
+
+    print("Script is done running")
+    print("Edge file is saved at: " + script_dir + "edges.txt")
+    print("Tree in NEWICK format is saved at: " + script_dir + "tree.txt")
 
 
 def make_newick_tree(identifiers, script_dir):

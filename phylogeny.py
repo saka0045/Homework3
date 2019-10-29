@@ -82,9 +82,30 @@ def main():
 
     edges_file.close()
 
+    # Construct the tree in NEWICK format
+    final_newick_string = make_newick_tree(identifiers, script_dir)
+
+    # Write the NEWICK format to the tree.txt file
+    newick_tree_file = open(script_dir + "tree.txt", "w")
+    newick_tree_file.write(final_newick_string + "\n")
+
+    # Close out files
+    fasta_file.close()
+    genetic_distance_file.close()
+    newick_tree_file.close()
+
+
+def make_newick_tree(identifiers, script_dir):
+    """
+    Function to construce the tree in NEWICK format. This function will use the edges.txt file to traverse the tree
+    in postorder. Splits each tree coming off of the root to create a sub tree in NEWICK format and concatenates
+    the string for the final tree
+    :param identifiers:
+    :param script_dir:
+    :return:
+    """
     # Use the edges.txt file to traverse the tree in postorder
     edges_file = open(script_dir + "edges.txt", "r")
-
     final_newick_string = "("
     for line in edges_file:
         line = line.rstrip()
@@ -107,8 +128,8 @@ def main():
                     ancestral_node_count = []
                     # Keep track of the highest node (smallest number) that the other child hasn't been visited
                     open_node = ""
-                    newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
-                                                       identifiers, newick_string, node_distance_list, open_node)
+                    newick_string = make_newick_substring(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                                                          identifiers, newick_string, node_distance_list, open_node)
                     # Append the portion of the tree visited from the root to the entire tree newick string
                     final_newick_string += newick_string
                     # Reset the node lists and start the next tree from the root
@@ -132,7 +153,6 @@ def main():
             ancestral_node_list.append(ancestral_node)
             descendant_node_list.append(descendant_node)
             node_distance_list.append(node_distance)
-
     # Traverse the last tree for the root in postorder and create the NEWICK format
     newick_string = ""
     ancestral_node_list.reverse()
@@ -140,11 +160,10 @@ def main():
     node_distance_list.reverse()
     ancestral_node_count = []
     open_node = ""
-    newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
-                                       identifiers, newick_string, node_distance_list, open_node)
+    newick_string = make_newick_substring(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                                          identifiers, newick_string, node_distance_list, open_node)
     # Append the NEWICK format of the final tree for the root to the entire tree string
     final_newick_string += newick_string
-
     # Close out the final_newick_string for the complete tree
     # If the final newick string ends with ",", replace it with ");"
     if final_newick_string.endswith(","):
@@ -152,20 +171,12 @@ def main():
     # Otherwise, close out the tree with ");"
     else:
         final_newick_string += ");"
-
-    # Write the NEWICK format to the tree.txt file
-    newick_tree_file = open(script_dir + "tree.txt", "w")
-    newick_tree_file.write(final_newick_string + "\n")
-
-    # Close out files
-    fasta_file.close()
-    genetic_distance_file.close()
     edges_file.close()
-    newick_tree_file.close()
+    return final_newick_string
 
 
-def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
-                       identifiers, newick_string, node_distance_list, open_node):
+def make_newick_substring(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                          identifiers, newick_string, node_distance_list, open_node):
     """
     Function to traverse one of the trees from the root in postorder and construct the results in NEWICK format
     :param ancestral_node_count:

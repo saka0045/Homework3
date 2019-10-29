@@ -83,7 +83,7 @@ def main():
     edges_file.close()
 
     # Use the edges.txt file to traverse the tree in postorder
-    edges_file = open(script_dir + "test_edges.txt", "r")
+    edges_file = open(script_dir + "edges.txt", "r")
 
     final_newick_string = "("
     for line in edges_file:
@@ -112,6 +112,9 @@ def main():
                     ancestral_node_list = []
                     descendant_node_list = []
                     node_distance_list = []
+                    ancestral_node_list.append(ancestral_node)
+                    descendant_node_list.append(descendant_node)
+                    node_distance_list.append(node_distance)
             except NameError:
                 # If the list doesn't exist, create the list and add the root information
                 ancestral_node_list = []
@@ -180,7 +183,7 @@ def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_nod
                 # add "(" at the beginning of the string and update the open node
                 elif int(ancestral_node_list[index]) < int(open_node):
                     # Don't add any parenthesis for the root
-                    if int(ancestral_node_list[index]) == (len(identifiers) + 1):
+                    if (ancestral_node_list[index]) == str((len(identifiers) + 1)):
                         continue
                     else:
                         newick_string = "(" + newick_string
@@ -191,18 +194,11 @@ def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_nod
                     index_for_parenthesis = newick_string.rfind("(")
                     newick_string = (newick_string[:(index_for_parenthesis + 1)] + "(" +
                                      newick_string[(index_for_parenthesis + 1):])
-                '''
-                try:
-                    if ancestral_node_list[index] == ancestral_node_list[index + 1]:
-                        index_for_parenthesis = newick_string.rfind("(")
-                        newick_string = (newick_string[:(index_for_parenthesis + 1)] + "(" +
-                                         newick_string[(index_for_parenthesis + 1):])
-                    else:
-                        newick_string = "(" + newick_string
-                except IndexError:
+                # Append the ancestral node to the ancestral node count list if it is not a root
+                if ancestral_node_list[index] != str((len(identifiers) + 1)):
+                    ancestral_node_count.append(ancestral_node_list[index])
+                else:
                     continue
-                '''
-                ancestral_node_count.append(ancestral_node_list[index])
             else:
                 newick_string += ":" + node_distance_list[index] + ")"
     return newick_string

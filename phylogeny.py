@@ -95,28 +95,32 @@ def main():
         # Check to see if the ancestral node is the root
         if ancestral_node == str(len(identifiers) + 1):
             try:
-                # If there are items already in the lists, do...
-                # FIXME
+                # Next time it comes across the root, one branch from the root would have been traversed in preorder
                 if len(ancestral_node_list) > 0:
-                    # Reverse the order of the lists for postorder since the edges.txt was preorder
+                    # Below portion is done for each tree from the root, except for the final tree visited
+                    # Reverse the order of that was traversed in preorder to traverse in postorder
                     newick_string = ""
                     ancestral_node_list.reverse()
                     descendant_node_list.reverse()
                     node_distance_list.reverse()
+                    # Keep count of if the ancestral node was visited for the first time or not
                     ancestral_node_count = []
+                    # Keep track of the highest node (smallest number) that the other child hasn't been visited
                     open_node = ""
                     newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
                                                        identifiers, newick_string, node_distance_list, open_node)
+                    # Append the portion of the tree visited from the root to the entire tree newick string
                     final_newick_string += newick_string
-                    # Reset the node lists
+                    # Reset the node lists and start the next tree from the root
                     ancestral_node_list = []
                     descendant_node_list = []
                     node_distance_list = []
                     ancestral_node_list.append(ancestral_node)
                     descendant_node_list.append(descendant_node)
                     node_distance_list.append(node_distance)
+            # Since the first item's ancestral node is the root, it will error out
             except NameError:
-                # If the list doesn't exist, create the list and add the root information
+                # Create the lists and add the root information
                 ancestral_node_list = []
                 descendant_node_list = []
                 node_distance_list = []
@@ -129,7 +133,7 @@ def main():
             descendant_node_list.append(descendant_node)
             node_distance_list.append(node_distance)
 
-    # Make the last tree for the root
+    # Traverse the last tree for the root in postorder and create the NEWICK format
     newick_string = ""
     ancestral_node_list.reverse()
     descendant_node_list.reverse()
@@ -138,6 +142,7 @@ def main():
     open_node = ""
     newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
                                        identifiers, newick_string, node_distance_list, open_node)
+    # Append the NEWICK format of the final tree for the root to the entire tree string
     final_newick_string += newick_string
 
     # Close out the final_newick_string for the complete tree
@@ -148,39 +153,60 @@ def main():
     else:
         final_newick_string += ");"
 
+    # Write the NEWICK format to the tree.txt file
+    newick_tree_file = open(script_dir + "tree.txt", "w")
+    newick_tree_file.write(final_newick_string + "\n")
+
+    # Close out files
     fasta_file.close()
     genetic_distance_file.close()
     edges_file.close()
-    print(final_newick_string)
+    newick_tree_file.close()
 
 
 def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
                        identifiers, newick_string, node_distance_list, open_node):
+    """
+    Function to traverse one of the trees from the root in postorder and construct the results in NEWICK format
+    :param ancestral_node_count:
+    :param ancestral_node_list:
+    :param descendant_node_list:
+    :param identifiers:
+    :param newick_string:
+    :param node_distance_list:
+    :param open_node:
+    :return: Returns the NEWICK format string for the tree that traversed
+    """
     for index in range(0, len(ancestral_node_list)):
         # If the descendant node is a tip
         if int(descendant_node_list[index]) <= len(identifiers):
             # Get the identifier name in identifiers list
             descendant_node_key = (int(descendant_node_list[index]) - 1)
             descendant_node_identifier = identifiers[descendant_node_key]
-            # If this tip is the first child open the parenthesis and add the tip information
+            # If this tip is the first child, open the parenthesis and add the tip information
             if ancestral_node_list[index] not in ancestral_node_count:
                 newick_string += "(" + descendant_node_identifier + ":" + node_distance_list[
                     index] + ","
+                # Add the ancestral node to the ancestral node list to
+                # inform one of the child for this node has been visited
                 ancestral_node_count.append(ancestral_node_list[index])
             else:
                 # If this tip is the second child, add the tip information and close the parenthesis
                 newick_string += descendant_node_identifier + ":" + node_distance_list[index] + ")"
         # If the descendant node is a node
         elif int(descendant_node_list[index]) > len(identifiers):
+            # If this child node is the first branch of the ancestral node visited:
             if ancestral_node_list[index] not in ancestral_node_count:
                 newick_string += ":" + node_distance_list[index] + ","
-                # First time encountering an opening node, add "(" at the beginning of the newick string
+                # First time encountering a node with only one child visited (aka, the first node in the list),
+                # add "(" at the beginning of the newick string
                 if open_node == "":
                     newick_string = "(" + newick_string
                     # Keep track of the open node
                     open_node = ancestral_node_list[index]
-                # If you come across an open node higher in the tree (less number),
-                # add "(" at the beginning of the string and update the open node
+                # If you come across a node with only one child visited (open node) that is higher in the
+                # tree (less number) than the previous open node,
+                # add "(" at the very beginning of the string and update the open node
                 elif int(ancestral_node_list[index]) < int(open_node):
                     # Don't add any parenthesis for the root
                     if (ancestral_node_list[index]) == str((len(identifiers) + 1)):
@@ -194,12 +220,14 @@ def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_nod
                     index_for_parenthesis = newick_string.rfind("(")
                     newick_string = (newick_string[:(index_for_parenthesis + 1)] + "(" +
                                      newick_string[(index_for_parenthesis + 1):])
-                # Append the ancestral node to the ancestral node count list if it is not a root
+                # Append the ancestral node to the list of nodes with only one child visited
+                # Skip this step if the ancestral node is a root
                 if ancestral_node_list[index] != str((len(identifiers) + 1)):
                     ancestral_node_count.append(ancestral_node_list[index])
                 else:
                     continue
             else:
+                # If this node already had the other child visited:
                 newick_string += ":" + node_distance_list[index] + ")"
     return newick_string
 

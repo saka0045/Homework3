@@ -83,9 +83,9 @@ def main():
     edges_file.close()
 
     # Use the edges.txt file to traverse the tree in postorder
-    edges_file = open(script_dir + "edges.txt", "r")
+    edges_file = open(script_dir + "test_edges.txt", "r")
 
-    newick_string = ""
+    final_newick_string = "("
     for line in edges_file:
         line = line.rstrip()
         line_item = line.split("\t")
@@ -93,40 +93,31 @@ def main():
         descendant_node = line_item[1]
         node_distance = line_item[2]
         # Check to see if the ancestral node is the root
-        if ancestral_node == 62:
+        if ancestral_node == str(len(identifiers) + 1):
             try:
                 # If there are items already in the lists, do...
-                #FIXME
+                # FIXME
                 if len(ancestral_node_list) > 0:
                     # Reverse the order of the lists for postorder since the edges.txt was preorder
+                    newick_string = ""
                     ancestral_node_list.reverse()
                     descendant_node_list.reverse()
                     node_distance_list.reverse()
                     ancestral_node_count = []
-                    newick_string += "("
-                    for index in range(0, len(ancestral_node_list)):
-                        # If the descendant node is a tip, do...
-                        if int(descendant_node_list[index]) <= len(identifiers):
-                            descendant_node_key = (int(descendant_node_list[index]) - 1)
-                            descendant_node_identifier = identifiers[descendant_node_key]
-                            if ancestral_node_list[index] not in ancestral_node_count:
-                                newick_string += "(" + descendant_node_identifier + ":" + node_distance_list[index] + ","
-                                ancestral_node_count.append(ancestral_node_list[index])
-                            else:
-                                newick_string += descendant_node_identifier + ":" + node_distance_list[index] + ")"
-                        # If the descendant node is a node
-                        elif int(descendant_node_list[index]) > len(identifiers):
-                            if ancestral_node_list[index] not in ancestral_node_count:
-                                newick_string += ":" + node_distance_list[index] + ","
-                                ancestral_node_count.append(ancestral_node_list[index])
-                            else:
-                                newick_string += ":" + node_distance_list[index] + ")"
+                    open_node = ""
+                    newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                                                       identifiers, newick_string, node_distance_list, open_node)
+                    final_newick_string += newick_string
+                    # Reset the node lists
+                    ancestral_node_list = []
+                    descendant_node_list = []
+                    node_distance_list = []
             except NameError:
                 # If the list doesn't exist, create the list and add the root information
                 ancestral_node_list = []
                 descendant_node_list = []
                 node_distance_list = []
-                ancestral_node_list.append(ancestral_node_list)
+                ancestral_node_list.append(ancestral_node)
                 descendant_node_list.append(descendant_node)
                 node_distance_list.append(node_distance)
         # If the ancestral node is not a root, add the node information to the lists
@@ -135,17 +126,86 @@ def main():
             descendant_node_list.append(descendant_node)
             node_distance_list.append(node_distance)
 
+    # Make the last tree for the root
+    newick_string = ""
+    ancestral_node_list.reverse()
+    descendant_node_list.reverse()
+    node_distance_list.reverse()
+    ancestral_node_count = []
+    open_node = ""
+    newick_string = make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                                       identifiers, newick_string, node_distance_list, open_node)
+    final_newick_string += newick_string
+
+    # Close out the final_newick_string for the complete tree
+    # If the final newick string ends with ",", replace it with ");"
+    if final_newick_string.endswith(","):
+        final_newick_string = final_newick_string[:-1] + ");"
+    # Otherwise, close out the tree with ");"
+    else:
+        final_newick_string += ");"
+
     fasta_file.close()
     genetic_distance_file.close()
     edges_file.close()
+    print(final_newick_string)
 
 
-def write_newick_format(nested_edges_dict, root):
-    for key, val in nested_edges_dict.items():
-        if int(key) >= root:
-            place_holder_string = ""
-            while int(key) >= root:
-                newick_string = "(" + place_holder_string + ":" + str(val) + ")"
+def make_newick_string(ancestral_node_count, ancestral_node_list, descendant_node_list,
+                       identifiers, newick_string, node_distance_list, open_node):
+    for index in range(0, len(ancestral_node_list)):
+        # If the descendant node is a tip
+        if int(descendant_node_list[index]) <= len(identifiers):
+            # Get the identifier name in identifiers list
+            descendant_node_key = (int(descendant_node_list[index]) - 1)
+            descendant_node_identifier = identifiers[descendant_node_key]
+            # If this tip is the first child open the parenthesis and add the tip information
+            if ancestral_node_list[index] not in ancestral_node_count:
+                newick_string += "(" + descendant_node_identifier + ":" + node_distance_list[
+                    index] + ","
+                ancestral_node_count.append(ancestral_node_list[index])
+            else:
+                # If this tip is the second child, add the tip information and close the parenthesis
+                newick_string += descendant_node_identifier + ":" + node_distance_list[index] + ")"
+        # If the descendant node is a node
+        elif int(descendant_node_list[index]) > len(identifiers):
+            if ancestral_node_list[index] not in ancestral_node_count:
+                newick_string += ":" + node_distance_list[index] + ","
+                # First time encountering an opening node, add "(" at the beginning of the newick string
+                if open_node == "":
+                    newick_string = "(" + newick_string
+                    # Keep track of the open node
+                    open_node = ancestral_node_list[index]
+                # If you come across an open node higher in the tree (less number),
+                # add "(" at the beginning of the string and update the open node
+                elif int(ancestral_node_list[index]) < int(open_node):
+                    # Don't add any parenthesis for the root
+                    if int(ancestral_node_list[index]) == (len(identifiers) + 1):
+                        continue
+                    else:
+                        newick_string = "(" + newick_string
+                        open_node = ancestral_node_list[index]
+                # If the open node is at a lower position in the tree (higher number),
+                # add "(" at the last occurrence of an open node "("
+                elif int(ancestral_node_list[index]) > int(open_node):
+                    index_for_parenthesis = newick_string.rfind("(")
+                    newick_string = (newick_string[:(index_for_parenthesis + 1)] + "(" +
+                                     newick_string[(index_for_parenthesis + 1):])
+                '''
+                try:
+                    if ancestral_node_list[index] == ancestral_node_list[index + 1]:
+                        index_for_parenthesis = newick_string.rfind("(")
+                        newick_string = (newick_string[:(index_for_parenthesis + 1)] + "(" +
+                                         newick_string[(index_for_parenthesis + 1):])
+                    else:
+                        newick_string = "(" + newick_string
+                except IndexError:
+                    continue
+                '''
+                ancestral_node_count.append(ancestral_node_list[index])
+            else:
+                newick_string += ":" + node_distance_list[index] + ")"
+    return newick_string
 
 
 def make_edges_file(edges_dict, edges_file, identifiers):
